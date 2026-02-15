@@ -10,6 +10,19 @@ const pool = new Pool({
 });
 
 app.get("/", (req, res) => {
+  app.get("/register", async (req, res) => {
+  const { email } = req.query;
+  try {
+    const result = await pool.query(
+      "INSERT INTO users(email) VALUES($1) RETURNING *",
+      [email]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.send(err.message);
+  }
+});
+
   res.send("SnapSell API çalışıyor 🚀");
 });
 
