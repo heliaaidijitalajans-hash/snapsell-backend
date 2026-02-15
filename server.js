@@ -109,11 +109,43 @@ app.get("/ai-convert", async (req, res) => {
       return res.send("Yetersiz kredi");
     }
 
-    // kredi düş
     await pool.query(
       "UPDATE users SET credits = credits - 10 WHERE email=$1",
       [email]
     );
+
+    const prompt = `
+    Ürün: ${product}
+    SEO başlık, SEO açıklama ve Türkiye fiyat analizi üret.
+    `;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.candidates || !data.candidates.length) {
+      return res.send("AI cevap veremedi");
+    }
+
+    const text = data.candidates[0].content.parts[0].text;
+
+    res.json({
+      result: text,
+    });
+  } catch (err) {
+    res.send(err.message);
+  }
+});
+
 
     const prompt = `
     Sen bir e-ticaret uzmanısın.
