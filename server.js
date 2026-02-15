@@ -91,5 +91,60 @@ app.get("/convert", async (req, res) => {
   }
 });
 
+// AI dönüşüm endpointi
+app.get("/ai-convert", async (req, res) => {
+  const { email, product } = req.query;
+
+  try {
+    const user = await pool.query(
+      "SELECT * FROM users WHERE email=$1",
+      [email]
+    );
+
+    if (user.rows.length === 0) {
+      return res.send("Kullanıcı bulunamadı");
+    }
+
+    if (user.rows[0].credits < 10) {
+      return res.send("Yetersiz kredi");
+    }
+
+    // kredi düş
+    await pool.query(
+      "UPDATE users SET credits = credits - 10 WHERE email=$1",
+      [email]
+    );
+
+    const prompt = `
+    Sen bir e-ticaret uzmanısın.
+    Ürün: ${product}
+
+    Şunları üret:
+    1) SEO başlık
+    2) SEO açıklama
+    3) Türkiye piyasa fiyat aralığı (min-max-ortalama)
+    `;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    res.json({
+      aiResult: data.candidates[0].content.parts[0].text,
+    });
+  } catch (err) {
+    res.send(err.message);
+  }
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log("Server başladı"));
