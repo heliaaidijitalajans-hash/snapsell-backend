@@ -59,5 +59,37 @@ app.get("/users", async (req, res) => {
   res.json(result.rows);
 });
 
+// Kredi düşerek dönüşüm simülasyonu
+app.get("/convert", async (req, res) => {
+  const { email } = req.query;
+
+  try {
+    const user = await pool.query(
+      "SELECT * FROM users WHERE email=$1",
+      [email]
+    );
+
+    if (user.rows.length === 0) {
+      return res.send("Kullanıcı bulunamadı");
+    }
+
+    if (user.rows[0].credits < 10) {
+      return res.send("Yetersiz kredi");
+    }
+
+    const updated = await pool.query(
+      "UPDATE users SET credits = credits - 10 WHERE email=$1 RETURNING *",
+      [email]
+    );
+
+    res.json({
+      message: "Dönüşüm başarılı 🎉",
+      remainingCredits: updated.rows[0].credits,
+    });
+  } catch (err) {
+    res.send(err.message);
+  }
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log("Server başladı"));
