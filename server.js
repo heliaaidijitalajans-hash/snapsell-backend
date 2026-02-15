@@ -126,7 +126,7 @@ app.get("/ai-convert", async (req, res) => {
     `;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,7 +139,7 @@ app.get("/ai-convert", async (req, res) => {
     const data = await response.json();
 
     res.json({
-      aiResult: data.candidates[0].content.parts[0].text,
+      aiResult: data.candidates[0].content.parts[0].text || "AI cevap veremedi",
     });
   } catch (err) {
     res.send(err.message);
